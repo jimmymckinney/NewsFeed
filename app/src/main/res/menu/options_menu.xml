@@ -7,4 +7,10 @@
         android:title="@string/search_title"
         app:actionViewClass="android.support.v7.widget.SearchView"
         app:showAsAction="collapseActionView|ifRoom" />
+    <item
+        android:id="@+id/action_settings"
+        android:icon="@drawable/ic_filter_list_white_24dp"
+        android:orderInCategory="1"
+        android:title="@string/settings_menu_item"
+        app:showAsAction="ifRoom" />
 </menu>

@@ -69,9 +69,13 @@ public final class QueryUtils {
 
                 // Get a single newsArticle at position i within the list of newsArticles
                 JSONObject currentNewsArticle = newsArticleArray.getJSONObject(i);
-                JSONObject fields = currentNewsArticle.getJSONObject("fields");
-
-                String imageId = fields.getString("thumbnail");
+                String imageId;
+                if (currentNewsArticle.has("fields")) {
+                    JSONObject fields = currentNewsArticle.getJSONObject("fields");
+                    imageId = fields.getString("thumbnail");
+                } else {
+                    imageId = "http://cvalink.com/wp-content/themes/TechNews/images/img_not_available.png";
+                }
                 String headline = currentNewsArticle.getString("webTitle");
                 String publicationDate = currentNewsArticle.getString("webPublicationDate");
                 String url = currentNewsArticle.getString("webUrl");

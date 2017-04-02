@@ -3,15 +3,20 @@ package com.example.android.newsfeed;
 import android.app.LoaderManager;
 import android.app.SearchManager;
 import android.content.Context;
+import android.content.Intent;
 import android.content.Loader;
+import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.SearchView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ListView;
 import android.widget.ProgressBar;
@@ -24,6 +29,8 @@ public class NewsFeedActivity extends AppCompatActivity implements LoaderManager
 
     public static final String LOG_TAG = NewsFeedActivity.class.getName();
     private static final int NEWS_LOADER_ID = 1;
+    private static final String NEWS_REQUEST_URL =
+            "https://content.guardianapis.com/search?";
     private String mRequestUrl;
     private NewsArticleAdapter mAdapter;
     private TextView mEmptyStateTextView;
@@ -50,20 +57,14 @@ public class NewsFeedActivity extends AppCompatActivity implements LoaderManager
             public boolean onQueryTextChange(String newText) {
                 mEmptyStateTextView.setText(null); //Sets emptyText to null so that progress loader doesn't overlay emptyText
                 mAdapter.clear(); //Clears adapter so progress loader doesn't overlay the last search results
-                mRequestUrl = "https://content.guardianapis.com/search?q=";
                 if (!checkNetworkActivity()) {
                     progress.setVisibility(View.GONE);
                     mEmptyStateTextView.setText(R.string.no_connection);
                 } else {
-
-
                     mUserInput = newText.replaceAll(" ", "%20");
-                    mRequestUrl = "https://content.guardianapis.com/search?q=" + mUserInput + "&show-fields=thumbnail&api-key=test";
-
                     // Get a reference to the LoaderManager, in order to interact with loaders.
                     LoaderManager loaderManager = getLoaderManager();
                     loaderManager.restartLoader(NEWS_LOADER_ID, null, NewsFeedActivity.this);
-                    Log.v("Context", mRequestUrl);
                 }
                 return true;
             }
@@ -76,6 +77,19 @@ public class NewsFeedActivity extends AppCompatActivity implements LoaderManager
         });
 
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            Intent settingsIntent = new Intent(this, SettingsActivity.class);
+            startActivity(settingsIntent);
+            return true;
+        }
+        LoaderManager loaderManager = getLoaderManager();
+        loaderManager.restartLoader(NEWS_LOADER_ID, null, NewsFeedActivity.this);
+        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -120,10 +134,24 @@ public class NewsFeedActivity extends AppCompatActivity implements LoaderManager
 
     @Override
     public Loader<List<NewsArticle>> onCreateLoader(int i, Bundle bundle) {
-        progress.setVisibility(View.VISIBLE);
-        Log.v("Loader", "onCreateLoader");
-        // Create a new loader for the given URL
-        return new NewsArticleLoader(this, mRequestUrl);
+        SharedPreferences sharedPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+
+        String orderBy = sharedPrefs.getString(
+                getString(R.string.settings_order_by_key),
+                getString(R.string.settings_order_by_default));
+
+        Uri baseUri = Uri.parse(NEWS_REQUEST_URL);
+        Uri.Builder uriBuilder = baseUri.buildUpon();
+
+        if (mUserInput != null) {
+            uriBuilder.appendQueryParameter("q", mUserInput);
+        }
+        uriBuilder.appendQueryParameter("show-fields", "thumbnail");
+        uriBuilder.appendQueryParameter("order-by", orderBy);
+        uriBuilder.appendQueryParameter("api-key", "test");
+
+        Log.v("Context", String.valueOf(uriBuilder));
+        return new NewsArticleLoader(this, uriBuilder.toString());
     }
 
     @Override
